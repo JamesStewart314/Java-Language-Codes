@@ -1,8 +1,12 @@
-import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.logging.Level;
@@ -70,36 +74,32 @@ public class PersistenciaDrone {
                 // Dados eficientemente.
                 ByteBuffer byteBufferDrone = ByteBuffer.wrap(conteudo);
 
-                byteBufferDrone.put(PersistenciaDrone.POS_ID_DRONE, (byte)auxDrone.getIdentificador());
+                byteBufferDrone.putInt(PersistenciaDrone.POS_ID_DRONE, auxDrone.getIdentificador());
                 byteBufferDrone.put(PersistenciaDrone.POS_MARCA_DRONE, auxDrone.getMarca().getBytes());
                 byteBufferDrone.put(PersistenciaDrone.POS_MODELO_DRONE, auxDrone.getModelo().getBytes());
                 byteBufferDrone.put(PersistenciaDrone.POS_COR_DRONE, auxDrone.getCor().getBytes());
                 
                 for(int i = 0 ; i < 3 ; ++i) {
-                    byteBufferDrone.put(PersistenciaDrone.POS_DIMENSOES_DRONE + 4 * i, 
-                                        (byte)auxDrone.getDimensoes()[i]);
+                    byteBufferDrone.putFloat(PersistenciaDrone.POS_DIMENSOES_DRONE + 4 * i, auxDrone.getDimensoes()[i]);
                 }
 
-                byteBufferDrone.put(PersistenciaDrone.POS_PESO_DRONE, (byte)auxDrone.getPeso());
-                byteBufferDrone.put(PersistenciaDrone.POS_VEL_MAXIMA_DRONE, (byte)auxDrone.getVelMaxima());
-                byteBufferDrone.put(PersistenciaDrone.POS_VEL_ATUAL_DRONE, (byte)auxDrone.getVelAtual());
-                byteBufferDrone.put(PersistenciaDrone.POS_ALTITUDE_MAX_DRONE, (byte)auxDrone.getAltMax());
-                byteBufferDrone.put(PersistenciaDrone.POS_ALTITUDE_ATUAL_DRONE, (byte)auxDrone.getAltAtual());
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_PESO_DRONE, auxDrone.getPeso());
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_VEL_MAXIMA_DRONE, auxDrone.getVelMaxima());
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_VEL_ATUAL_DRONE, auxDrone.getVelAtual());
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_ALTITUDE_MAX_DRONE, auxDrone.getAltMax());
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_ALTITUDE_ATUAL_DRONE, auxDrone.getAltAtual());
 
                 for(int i = 0 ; i < 3 ; ++i) {
-                    byteBufferDrone.put(PersistenciaDrone.POS_COORD_INICIAL_DRONE + 4 * i, 
-                                        (byte)auxDrone.getCoordInicial()[i]);
+                    byteBufferDrone.putFloat(PersistenciaDrone.POS_COORD_INICIAL_DRONE + 4 * i, auxDrone.getCoordInicial()[i]);
                 }
 
                 for(int i = 0 ; i < 3 ; ++i) {
-                    byteBufferDrone.put(PersistenciaDrone.POS_COORD_ATUAL_DRONE + 4 * i, 
-                                        (byte)auxDrone.getCoordAtual()[i]);
+                    byteBufferDrone.putFloat(PersistenciaDrone.POS_COORD_ATUAL_DRONE + 4 * i, auxDrone.getCoordAtual()[i]);
                 }
 
-                byteBufferDrone.put(PersistenciaDrone.POS_NIVEL_BAT_DRONE, (byte)auxDrone.getNivelBateria());
+                byteBufferDrone.putInt(PersistenciaDrone.POS_NIVEL_BAT_DRONE, auxDrone.getNivelBateria());
 
                 dwDrone.write(byteBufferDrone.array());
-
             }
 
             fwDrone.close();
@@ -110,5 +110,188 @@ public class PersistenciaDrone {
         }
     }
 
+    public static Collection<Drone> lerDrones(String nomeArquivo) {
 
+        Collection<Drone> leitura_drones = new ArrayList<Drone>();
+
+        try {
+            FileInputStream fw = new FileInputStream(nomeArquivo);
+            DataInputStream dw = new DataInputStream(fw);
+            byte[] databytes = new byte[PersistenciaDrone.TAM_REG_DRONE];
+            boolean eof = false;
+
+            do {
+                try {
+                    if (dw.read(databytes, 0, PersistenciaDrone.TAM_REG_DRONE) == (-1)) {
+                        eof = true;
+                    } else {
+                        ByteBuffer result = ByteBuffer.wrap(databytes);
+
+                        int identificador = result.getInt(PersistenciaDrone.POS_ID_DRONE);
+                        String marca = new String(databytes, PersistenciaDrone.POS_MARCA_DRONE, PersistenciaDrone.TAM_MARCA_DRONE);
+                        String modelo = new String(databytes, PersistenciaDrone.POS_MODELO_DRONE, PersistenciaDrone.TAM_MODELO_DRONE);
+                        String cor = new String(databytes, PersistenciaDrone.POS_COR_DRONE, PersistenciaDrone.TAM_COR_DRONE);
+                        
+                        float[] dimensoes = new float[3];
+                        for(int i = 0 ; i < 3 ; i++) {
+                            dimensoes[i] = result.getFloat(PersistenciaDrone.POS_DIMENSOES_DRONE + 4 * i);
+                        }
+
+                        float peso = result.getFloat(PersistenciaDrone.POS_PESO_DRONE);
+                        float vel_maxima = result.getFloat(PersistenciaDrone.POS_VEL_MAXIMA_DRONE);
+                        float vel_atual = result.getFloat(PersistenciaDrone.POS_VEL_ATUAL_DRONE);
+                        float altitude_max = result.getFloat(PersistenciaDrone.POS_ALTITUDE_MAX_DRONE);
+                        float altitude_atual = result.getFloat(PersistenciaDrone.POS_ALTITUDE_ATUAL_DRONE);
+
+                        float[] coordenada_inicial = new float[3];
+                        for (int i = 0; i < 3; i++) {
+                            coordenada_inicial[i] = result.getFloat(PersistenciaDrone.POS_COORD_INICIAL_DRONE + 4 * i);
+                        }
+
+                        float[] coordenada_atual = new float[3];
+                        for (int i = 0; i < 3; i++) {
+                            coordenada_atual[i] = result.getFloat(PersistenciaDrone.POS_COORD_ATUAL_DRONE + 4 * i);
+                        }
+                        
+                        int nivel_bateria = result.getInt(PersistenciaDrone.POS_NIVEL_BAT_DRONE);
+
+                        Drone tempDrone = new Drone(identificador, marca, modelo, cor, dimensoes, 
+                                                    peso, vel_maxima, vel_atual, altitude_max, altitude_atual, 
+                                                    coordenada_inicial, coordenada_atual, nivel_bateria);
+                        
+                        leitura_drones.add(tempDrone);
+                        
+                    }
+                } catch (IOException ex) {
+                    Logger.getLogger(PersistenciaDrone.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            } while (!eof);
+
+            try {
+                fw.close();
+                dw.close();
+            } catch (IOException ex) {
+                Logger.getLogger(PersistenciaDrone.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(PersistenciaDrone.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    
+        return leitura_drones;
+    }
+
+    public static Drone lerRegistroPos(String nomeArquivo, int posicao) {
+
+        try {
+            if (posicao <= 0) throw new Exception("Posição deve ser um valor poritivo maior ou igual a um.");
+        } catch (Exception ex) {
+            System.out.println(ex);
+            return null;
+        }
+
+        RandomAccessFile ra;
+        try {
+            // Cria um arquivo de acesso direto
+            ra = new RandomAccessFile(nomeArquivo, "r");
+            // Coloca o cursor no terceiro no quarto registro (salta os 3 registros anteriores)
+            // Posicao medida ordinalmente: 1(primeiro), 2(segundo), 3(terceiro), ...
+            ra.seek((posicao - 1) * PersistenciaDrone.TAM_REG_DRONE);
+            
+            byte[] registroUnitario = new byte[PersistenciaDrone.TAM_REG_DRONE];
+            Arrays.fill(registroUnitario, (byte)0);
+            // Efetuando a leitura dos Bytes:
+            ra.read(registroUnitario, 0, PersistenciaDrone.TAM_REG_DRONE);
+            ByteBuffer bbRegistroUnitario = ByteBuffer.wrap(registroUnitario);
+
+            int identificador = bbRegistroUnitario.getInt(PersistenciaDrone.POS_ID_DRONE);
+            String marca = new String(registroUnitario, PersistenciaDrone.POS_MARCA_DRONE, PersistenciaDrone.TAM_MARCA_DRONE);
+            String modelo = new String(registroUnitario, PersistenciaDrone.POS_MODELO_DRONE, PersistenciaDrone.TAM_MODELO_DRONE);
+            String cor = new String(registroUnitario, PersistenciaDrone.POS_COR_DRONE, PersistenciaDrone.TAM_COR_DRONE);
+            
+            float[] dimensoes = new float[3];
+            for(int i = 0 ; i < 3 ; i++) {
+                dimensoes[i] = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_DIMENSOES_DRONE + 4 * i);
+            }
+
+            float peso = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_PESO_DRONE);
+            float vel_maxima = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_VEL_MAXIMA_DRONE);
+            float vel_atual = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_VEL_ATUAL_DRONE);
+            float altitude_max = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_ALTITUDE_MAX_DRONE);
+            float altitude_atual = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_ALTITUDE_ATUAL_DRONE);
+
+            float[] coordenada_inicial = new float[3];
+            for (int i = 0; i < 3; i++) {
+                coordenada_inicial[i] = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_COORD_INICIAL_DRONE + 4 * i);
+            }
+
+            float[] coordenada_atual = new float[3];
+            for (int i = 0; i < 3; i++) {
+                coordenada_atual[i] = bbRegistroUnitario.getFloat(PersistenciaDrone.POS_COORD_ATUAL_DRONE + 4 * i);
+            }
+            
+            int nivel_bateria = bbRegistroUnitario.getInt(PersistenciaDrone.POS_NIVEL_BAT_DRONE);
+
+            return new Drone(identificador, marca, modelo, cor, dimensoes, 
+                             peso, vel_maxima, vel_atual, altitude_max, altitude_atual, 
+                             coordenada_inicial, coordenada_atual, nivel_bateria);
+
+        } catch (IOException ex) {
+            Logger.getLogger(PersistenciaDrone.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        return null;
+    }
+
+    public static void escreverRegistroPos(String nomeArq, int posicao, Drone novoInfoDrone) {
+        try {
+            if (posicao <= 0) throw new Exception("Posição deve ser um valor poritivo maior ou igual a um.");
+        } catch (Exception ex) {
+            System.out.println(ex);
+            return;
+        }
+
+        RandomAccessFile ra;
+        try {
+            ra = new RandomAccessFile(nomeArq, "rw");
+            // Posicionando o Cursor:
+            ra.seek((posicao - 1) * PersistenciaDrone.TAM_REG_DRONE);
+            
+            byte[] infoDrone = new byte[PersistenciaDrone.TAM_REG_DRONE];
+            Arrays.fill(infoDrone, (byte)0);
+            ByteBuffer byteBufferDrone = ByteBuffer.wrap(infoDrone);
+
+            byteBufferDrone.putInt(PersistenciaDrone.POS_ID_DRONE, novoInfoDrone.getIdentificador());
+            byteBufferDrone.put(PersistenciaDrone.POS_MARCA_DRONE, novoInfoDrone.getMarca().getBytes());
+            byteBufferDrone.put(PersistenciaDrone.POS_MODELO_DRONE, novoInfoDrone.getModelo().getBytes());
+            byteBufferDrone.put(PersistenciaDrone.POS_COR_DRONE, novoInfoDrone.getCor().getBytes());
+
+            for (int i = 0; i < 3; ++i) {
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_DIMENSOES_DRONE + 4 * i, novoInfoDrone.getDimensoes()[i]);
+            }
+
+            byteBufferDrone.putFloat(PersistenciaDrone.POS_PESO_DRONE, novoInfoDrone.getPeso());
+            byteBufferDrone.putFloat(PersistenciaDrone.POS_VEL_MAXIMA_DRONE, novoInfoDrone.getVelMaxima());
+            byteBufferDrone.putFloat(PersistenciaDrone.POS_VEL_ATUAL_DRONE, novoInfoDrone.getVelAtual());
+            byteBufferDrone.putFloat(PersistenciaDrone.POS_ALTITUDE_MAX_DRONE, novoInfoDrone.getAltMax());
+            byteBufferDrone.putFloat(PersistenciaDrone.POS_ALTITUDE_ATUAL_DRONE, novoInfoDrone.getAltAtual());
+
+            for (int i = 0; i < 3; ++i) {
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_COORD_INICIAL_DRONE + 4 * i, novoInfoDrone.getCoordInicial()[i]);
+            }
+
+            for (int i = 0; i < 3; ++i) {
+                byteBufferDrone.putFloat(PersistenciaDrone.POS_COORD_ATUAL_DRONE + 4 * i, novoInfoDrone.getCoordAtual()[i]);
+            }
+
+            byteBufferDrone.putInt(PersistenciaDrone.POS_NIVEL_BAT_DRONE, novoInfoDrone.getNivelBateria());
+
+            ra.write(byteBufferDrone.array());
+
+
+        } catch (IOException ex) {
+            Logger.getLogger(PersistenciaDrone.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }
+

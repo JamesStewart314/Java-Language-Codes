@@ -195,12 +195,12 @@ public class Drone {
     @Override
     public String toString() {
         String result = this.identificador + " " + this.marca + " " + this.modelo + " " +
-        this.cor + " " + Float.toString(this.dimensoes[0]) + " " + Float.toString(this.dimensoes[1]) +
-        " " + Float.toString(this.dimensoes[2]) + " " + Float.toString(peso) + " " +
+        this.cor + " " + Float.toString(this.dimensoes[0]) + " " + Float.toString(this.dimensoes[1]) + " " + 
+        Float.toString(this.dimensoes[2]) + " " + Float.toString(peso) + " " +
         Float.toString(this.vel_maxima) + " " + Float.toString(this.vel_atual) + " " +
         Float.toString(this.altitude_max) + " " + Float.toString(this.altitude_atual) + " " + 
         Float.toString(this.coordenada_inicial[0]) + " " + Float.toString(this.coordenada_inicial[1]) + " " + 
-        Float.toString(this.coordenada_inicial[2]) + Float.toString(this.coordenada_atual[0]) + " " + 
+        Float.toString(this.coordenada_inicial[2]) + " " + Float.toString(this.coordenada_atual[0]) + " " + 
         Float.toString(this.coordenada_atual[1]) + " " + Float.toString(this.coordenada_atual[2]) + " " +
         Integer.toString(this.nivel_bateria);
 
