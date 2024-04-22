@@ -1,5 +1,3 @@
-import java.lang.Math;
-
 public class Drone {
     
     private int identificador, nivel_bateria;
@@ -209,10 +207,12 @@ public class Drone {
 
     public static void main(String[] args) {
 
-        Drone n1 = new Drone(2, "teste", "teste1", "teste2", new float[] { 1.1f, 2.2f, 3.3f }, 10f, 200f, 0f, 70f, 0f,
-                new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 63);
-        Drone n2 = new Drone(2, "teste", "teste1", "teste2", new float[] { 1.1f, 2.2f, 3.3f }, 10f, 200f, 0f, 70f, 0f,
-                new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 63);
+        Drone n1 = new Drone(20, "Xiaomi", "REDMI98", "amarelo", 
+                     new float[] { 10.1f, 20.2f, 30.3f }, 10f, 200f, 0f, 70f, 0f,
+                     new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 63);
+        Drone n2 = new Drone(40, "LGTV", "LG-31", "azul", 
+                      new float[] { 12.1f, 24.2f, 36.3f }, 10f, 200f, 0f, 70f, 0f,
+                      new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 63);
 
         n1.imprimir();
         n1.subir(170f);
@@ -223,6 +223,19 @@ public class Drone {
 
         for(float a: n1.getDimensoes()) {
             System.out.println(a);
+        }
+
+        DroneDAO persistenciaDrone = new DroneDAO("drones.txt");
+        persistenciaDrone.add(n1);
+        persistenciaDrone.add(n2);
+
+        System.out.println("Salvando Drones:");
+        persistenciaDrone.save();
+        System.out.println("Carregando Drones:");
+        persistenciaDrone.load();
+
+        for (int i = 0 ; i < persistenciaDrone.getNumDrones() ; i++) {
+            System.out.println(persistenciaDrone.getDrone(i));
         }
     }
 }
